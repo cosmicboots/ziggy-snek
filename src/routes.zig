@@ -8,11 +8,16 @@ pub const RouteErrors = error{
     HttpError,
 };
 
-const KEY = *const fn (*Server.Request, std.mem.Allocator) RouteErrors!void;
+const Response = struct {
+    content: []const u8,
+    options: ?Server.Request.RespondOptions,
+};
+
+const KEY = *const fn (*Server.Request, std.mem.Allocator) RouteErrors!Response;
 
 var routes: std.StringArrayHashMap(KEY) = undefined;
 
-pub fn handle_route(req: *Server.Request, allocator: std.mem.Allocator) RouteErrors!void {
+pub fn handleRoute(req: *Server.Request, allocator: std.mem.Allocator) RouteErrors!Response {
     const route = routes.get(req.head.target);
     if (route == null) {
         return RouteErrors.NotFound;
@@ -31,20 +36,26 @@ pub fn deinit() void {
     routes.deinit();
 }
 
-fn root(req: *Server.Request, allocator: std.mem.Allocator) !void {
+fn root(req: *Server.Request, allocator: std.mem.Allocator) !Response {
     _ = allocator; // autofix
     if (req.head.method != .GET) {
         return RouteErrors.MethodNotAllowed;
     }
 
-    req.respond("Hello from the root", .{}) catch return RouteErrors.HttpError;
+    return Response{
+        .content = "Hello from the root",
+        .options = null,
+    };
 }
 
-fn hello(req: *Server.Request, allocator: std.mem.Allocator) !void {
+fn hello(req: *Server.Request, allocator: std.mem.Allocator) !Response {
     _ = allocator; // autofix
     if (req.head.method != .GET) {
         return RouteErrors.MethodNotAllowed;
     }
 
-    req.respond("Hello from the hello", .{}) catch return RouteErrors.HttpError;
+    return Response{
+        .content = "Hello from the hello endpoint",
+        .options = null,
+    };
 }

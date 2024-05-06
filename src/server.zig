@@ -4,6 +4,7 @@ const routes = @import("routes.zig");
 const log = std.log.scoped(.server);
 
 fn handleConnection(conn: std.net.Server.Connection, allocator: std.mem.Allocator) !void {
+    defer conn.stream.close();
     var buf: [4096]u8 = undefined;
 
     var http = std.http.Server.init(conn, &buf);
@@ -18,18 +19,24 @@ fn handleConnection(conn: std.net.Server.Connection, allocator: std.mem.Allocato
     }
     log.debug("===============", .{});
 
-    routes.handle_route(&req, allocator) catch |err| {
+    const res = routes.handleRoute(&req, allocator) catch |err| {
         log.err("Error handling route: {s}", .{@errorName(err)});
         if (err == routes.RouteErrors.NotFound) {
-            try req.respond("", .{ .status = std.http.Status.not_found });
+            try req.respond("", .{ .status = std.http.Status.not_found, .keep_alive = false });
         } else if (err == routes.RouteErrors.MethodNotAllowed) {
-            try req.respond("", .{ .status = std.http.Status.method_not_allowed });
+            try req.respond("", .{ .status = std.http.Status.method_not_allowed, .keep_alive = false });
         } else {
-            try req.respond("", .{ .status = std.http.Status.internal_server_error });
+            try req.respond("", .{ .status = std.http.Status.internal_server_error, .keep_alive = false });
         }
-
         return;
     };
+
+    const options = if (res.options) |options|
+        options
+    else
+        std.http.Server.Request.RespondOptions{ .keep_alive = false };
+
+    try req.respond(res.content, options);
 }
 
 pub fn runServer(server: *std.net.Server, allocator: std.mem.Allocator) !void {
