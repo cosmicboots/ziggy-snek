@@ -1,10 +1,12 @@
 const std = @import("std");
+const json = std.json;
 
 const Server = std.http.Server;
 
 pub const RouteErrors = error{
     NotFound,
     MethodNotAllowed,
+    JsonError,
     HttpError,
 };
 
@@ -37,13 +39,23 @@ pub fn deinit() void {
 }
 
 fn root(req: *Server.Request, allocator: std.mem.Allocator) !Response {
-    _ = allocator; // autofix
     if (req.head.method != .GET) {
         return RouteErrors.MethodNotAllowed;
     }
 
+    const blob = json.stringifyAlloc(allocator, .{
+        .apiversion = "1",
+        //.author = "MyUsername",
+        //.color = "#888888",
+        //.head = "default",
+        //.tail = "default",
+        //.version = "0.0.1-beta",
+    }, .{}) catch {
+        return RouteErrors.JsonError;
+    };
+
     return Response{
-        .content = "Hello from the root",
+        .content = blob,
         .options = null,
     };
 }
