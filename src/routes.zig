@@ -1,5 +1,6 @@
 const std = @import("std");
 const json = std.json;
+const game = @import("game.zig");
 
 const Server = std.http.Server;
 
@@ -8,6 +9,7 @@ pub const RouteErrors = error{
     MethodNotAllowed,
     JsonError,
     HttpError,
+    MemoryError,
 };
 
 const Response = struct {
@@ -31,7 +33,7 @@ pub fn handleRoute(req: *Server.Request, allocator: std.mem.Allocator) RouteErro
 pub fn init(allocator: std.mem.Allocator) !void {
     routes = std.StringArrayHashMap(KEY).init(allocator);
     try routes.put("/", root);
-    try routes.put("/hello", hello);
+    try routes.put("/move", move);
 }
 
 pub fn deinit() void {
@@ -60,14 +62,30 @@ fn root(req: *Server.Request, allocator: std.mem.Allocator) !Response {
     };
 }
 
-fn hello(req: *Server.Request, allocator: std.mem.Allocator) !Response {
-    _ = allocator; // autofix
-    if (req.head.method != .GET) {
+fn move(req: *Server.Request, allocator: std.mem.Allocator) !Response {
+    if (req.head.method != .POST) {
         return RouteErrors.MethodNotAllowed;
     }
 
+    var req_reader = req.reader() catch {
+        return RouteErrors.HttpError;
+    };
+    const body = req_reader.readAllAlloc(allocator, std.math.maxInt(usize)) catch {
+        return RouteErrors.MemoryError;
+    };
+
+    const parsed: json.Parsed(game.Move) = json.parseFromSlice(
+        game.Move,
+        allocator,
+        body,
+        .{},
+    ) catch {
+        return RouteErrors.JsonError;
+    };
+    defer parsed.deinit();
+
     return Response{
-        .content = "Hello from the hello endpoint",
+        .content = "ok",
         .options = null,
     };
 }
