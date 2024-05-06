@@ -22,7 +22,14 @@ const KEY = *const fn (*Server.Request, std.mem.Allocator) RouteErrors!Response;
 var routes: std.StringArrayHashMap(KEY) = undefined;
 
 pub fn handleRoute(req: *Server.Request, allocator: std.mem.Allocator) RouteErrors!Response {
-    const route = routes.get(req.head.target);
+    var path: []const u8 = undefined;
+    if (req.head.target[req.head.target.len - 1] == '/') {
+        const target = req.head.target[0..(req.head.target.len - 1)];
+        path = target;
+    } else {
+        path = req.head.target;
+    }
+    const route = routes.get(path);
     if (route == null) {
         return RouteErrors.NotFound;
     }
@@ -84,8 +91,15 @@ fn move(req: *Server.Request, allocator: std.mem.Allocator) !Response {
     };
     defer parsed.deinit();
 
+    const blob = json.stringifyAlloc(allocator, .{
+        .move = "up",
+        .shout = "I'm a zig snake!",
+    }, .{}) catch {
+        return RouteErrors.JsonError;
+    };
+
     return Response{
-        .content = "ok",
+        .content = blob,
         .options = null,
     };
 }

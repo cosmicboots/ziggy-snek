@@ -17,7 +17,7 @@ pub fn main() !void {
     const sigaction: std.os.linux.Sigaction = .{ .handler = .{ .handler = sigHandler }, .mask = .{0} ** 32, .flags = 0 };
     _ = std.os.linux.sigaction(std.os.linux.SIG.INT, &sigaction, null);
 
-    var address = std.net.Address.initIp4(.{ 127, 0, 0, 1 }, 3030);
+    var address = std.net.Address.initIp4(.{ 0, 0, 0, 0 }, 3030);
 
     var listener: std.net.Server = try address.listen(.{ .reuse_address = true });
     defer listener.deinit();
