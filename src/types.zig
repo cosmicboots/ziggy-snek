@@ -49,3 +49,15 @@ pub const MoveReq = struct {
     board: Board,
     you: Snake,
 };
+
+pub const Direction = enum {
+    up,
+    down,
+    left,
+    right,
+};
+
+pub const MoveRes = struct {
+    move: Direction,
+    shout: ?[]const u8,
+};

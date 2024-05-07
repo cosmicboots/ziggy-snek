@@ -1,6 +1,7 @@
 const std = @import("std");
 const json = std.json;
 const types = @import("types.zig");
+const game = @import("game.zig");
 
 const log = std.log.scoped(.routes);
 
@@ -99,10 +100,11 @@ fn move(req: *Server.Request, allocator: std.mem.Allocator) !Response {
 
     log.debug("Move request: {}\n", .{parsed});
 
-    const blob = json.stringifyAlloc(allocator, .{
-        .move = "up",
-        .shout = "I'm a zig snake!",
-    }, .{}) catch {
+    const next_move = game.calcMove(parsed);
+
+    const blob = json.stringifyAlloc(allocator, next_move, .{
+        .emit_null_optional_fields = false,
+    }) catch {
         return RouteErrors.JsonError;
     };
 
