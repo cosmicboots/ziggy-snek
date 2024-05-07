@@ -25,7 +25,7 @@ pub const Customization = struct {
 pub const Snake = struct {
     id: []const u8,
     name: []const u8,
-    health: usize,
+    health: u7,
     body: []const Location,
     latency: []const u8,
     head: Location,
@@ -40,9 +40,10 @@ pub const Board = struct {
     width: usize,
     food: []const Location,
     hazards: []const Location,
+    snakes: []const Snake,
 };
 
-pub const Move = struct {
+pub const MoveReq = struct {
     game: Game,
     turn: usize,
     board: Board,

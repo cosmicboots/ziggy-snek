@@ -6,10 +6,7 @@ const log = std.log.scoped(.server);
 
 fn handleConnection(conn: std.net.Server.Connection, child_allocator: std.mem.Allocator) !void {
     var arena = std.heap.ArenaAllocator.init(child_allocator);
-    defer {
-        log.debug("Cleaning up request memory (arena deinit)", .{});
-        arena.deinit();
-    }
+    defer arena.deinit();
     var allocator = arena.allocator();
 
     defer conn.stream.close();
@@ -20,12 +17,12 @@ fn handleConnection(conn: std.net.Server.Connection, child_allocator: std.mem.Al
 
     log.info("Received request: {s}", .{req.head.target});
 
-    var headers = req.iterateHeaders();
-    log.debug("=== HEADERS ===", .{});
-    while (headers.next()) |header| {
-        log.debug("{s}: {s}", .{ header.name, header.value });
-    }
-    log.debug("===============", .{});
+    //var headers = req.iterateHeaders();
+    //log.debug("=== HEADERS ===", .{});
+    //while (headers.next()) |header| {
+    //    log.debug("{s}: {s}", .{ header.name, header.value });
+    //}
+    //log.debug("===============", .{});
     const res = routes.handleRoute(&req, allocator) catch |err| {
         log.err("Error handling route: {s}", .{@errorName(err)});
         if (err == routes.RouteErrors.NotFound) {
